@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+#Set script name
+SCRIPT=`basename ${BASH_SOURCE[0]}`
+
+upshost=""
+
+# help function
+function printHelp {
+  echo -e \\n"Help for $SCRIPT"\\n
+  echo -e "Basic usage: $SCRIPT -H apchost"\\n
+  echo -e "Return APC Online, Onbatt, Boost, Trim"\\n
+  exit 1
+}
+
+while getopts :H:h FLAG; do
+  case $FLAG in
+    H)
+      upshost=$OPTARG
+      ;;
+    h)
+      printHelp
+      ;;
+    \?)
+      echo -e \\n"Option - $OPTARG not allowed."
+      printHelp
+      exit 2
+      ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
+[[ -z "$upshost" ]] && printHelp && exit 2
+
+devicename=($(snmpwalk -v1 -c public $upshost -Oq SNMPv2-SMI::enterprises.318.1.1.1.1.1.2.0))
+temp="${devicename[1]%\"}"
+name="${temp#\"}"
+
+battpercent=($(snmpwalk -v1 -c public $upshost -Oq SNMPv2-SMI::enterprises.318.1.1.1.2.2.1.0))
+load=($(snmpwalk -v1 -c public $upshost -Oq SNMPv2-SMI::enterprises.318.1.1.1.4.2.3.0))
+upsdata=($(snmpwalk -v1 -c public $upshost -Oq SNMPv2-SMI::enterprises.318.1.1.1.4.1.1.0))
+
+case ${upsdata[1]} in
+2)
+	status="ONLINE"
+	exitstatus=0
+	;;
+3)
+	status="ONBATT"
+	exitstatus=2
+	;;
+4)
+	status="BOOST"
+	exitstatus=1
+	;;
+12)
+	status="TRIM"
+	exitstatus=1
+	;;
+esac
+
+message="[$name] $status Battery: ${battpercent[1]} Load: ${load[1]}"
+
+echo -e $message
+$(exit $exitstatus)
