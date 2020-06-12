@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# arcconf must be setuid for this to work
+
+. /etc/adaptec/aac.conf
+
+#Set script name
+SCRIPT=`basename ${BASH_SOURCE[0]}`
+
+#Defunct disk drive count                 : 1
+#Logical devices/Failed/Degraded          : 2/0/1
+
+DEFUNCT=$($ARCCONF getconfig 1 ad|grep "Defunct disk drive count"|awk '{print $6}')
+STATE=$($ARCCONF getconfig 1 pd|grep -A2 Failed|egrep -e "Reported Location|*  State *: "|grep -v Failed|cut -d: -f2|sed -e 's/^ *//g;s/,//g;s/ /_/g;')
+
+if [ ! -z "$DEFUNCT" -a "$DEFUNCT" -ne 0 ]; then
+	status="Failed"
+	exitstatus=2
+	location=$STATE
+else
+	status="OK"
+	exitstatus=0
+fi
+
+message="AACRAID $status $location"
+
+echo -e $message
+$(exit $exitstatus)

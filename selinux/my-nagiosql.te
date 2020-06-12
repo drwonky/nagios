@@ -1,0 +1,35 @@
+
+module my-nagiosql 1.0;
+
+require {
+	type httpd_sys_rw_content_t;
+	type nagios_t;
+	type nagios_etc_t;
+	type httpd_t;
+	type nagios_spool_t;
+	type nagios_exec_t;
+	class dir { add_name getattr open read remove_name search write };
+	class file { create getattr map unlink write };
+}
+
+#============= httpd_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow httpd_t nagios_etc_t:file map;
+
+#!!!! This avc is allowed in the current policy
+allow httpd_t nagios_exec_t:file map;
+
+#!!!! This avc is allowed in the current policy
+allow httpd_t nagios_spool_t:dir { add_name getattr open read remove_name search write };
+
+#!!!! This avc is allowed in the current policy
+allow httpd_t nagios_spool_t:file { create getattr map unlink write };
+
+#============= nagios_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t httpd_sys_rw_content_t:dir { add_name getattr open read remove_name search write };
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t httpd_sys_rw_content_t:file { create getattr map unlink write };

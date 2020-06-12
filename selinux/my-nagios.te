@@ -1,0 +1,15 @@
+
+module my-nagios 1.0;
+
+require {
+	type nagios_t;
+	type httpd_sys_rw_content_t;
+	class dir { getattr open read search };
+	class file { getattr open read map };
+}
+
+#============= nagios_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow nagios_t httpd_sys_rw_content_t:dir { getattr open read search };
+allow nagios_t httpd_sys_rw_content_t:file { getattr open read map };

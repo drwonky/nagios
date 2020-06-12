@@ -1,0 +1,16 @@
+
+module my-php-fpm 1.0;
+
+require {
+	type httpd_sys_content_t;
+	type httpd_t;
+	type nagios_spool_t;
+	class file { getattr read open map };
+	class dir write;
+}
+
+#============= httpd_t ==============
+
+#!!!! This avc can be allowed using the boolean 'httpd_unified'
+allow httpd_t httpd_sys_content_t:dir write;
+allow httpd_t nagios_spool_t:file { getattr read open map };

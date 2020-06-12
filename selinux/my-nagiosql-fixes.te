@@ -1,0 +1,31 @@
+module my-nagiosql-fixes 1.0;
+
+require {
+        type kernel_t; # Not really part of the problem - this is just an include of a type definition.
+        type nagios_spool_t;
+        type nagios_exec_t;
+        type nagios_checkdisk_plugin_t;
+        type httpd_t;
+        type nagios_etc_t;
+        type nagios_t;
+        type nagios_unconfined_plugin_t;
+        class file { open write create execute read getattr setattr unlink execute_no_trans };
+        class dir { write read getattr search remove_name add_name };
+        class fifo_file { create read write getattr open };
+        class process { noatsecure rlimitinh siginh };
+        class unix_stream_socket { read write };
+}
+
+allow httpd_t nagios_t:file { open read write };
+allow httpd_t nagios_t:dir { getattr search write };
+allow httpd_t nagios_etc_t:dir { getattr search write add_name remove_name };
+allow httpd_t nagios_etc_t:file { open create write getattr read unlink setattr };
+allow httpd_t nagios_exec_t:file { create execute open read getattr execute_no_trans };
+allow httpd_t nagios_spool_t:fifo_file { read write create getattr open };
+allow httpd_t nagios_spool_t:file { read write create getattr open };
+allow httpd_t nagios_spool_t:dir { getattr search read write add_name remove_name };
+allow httpd_t kernel_t:dir { getattr search };  # <----------------------------------------- Problem
+allow httpd_t kernel_t:file { open getattr read }; # <-------------------------------------- Problem
+allow nagios_checkdisk_plugin_t nagios_t:unix_stream_socket { read write }; #Not a NagioSQL issue
+allow nagios_t nagios_checkdisk_plugin_t:process { noatsecure rlimitinh siginh }; #Not a NagioSQL issue
+allow nagios_t nagios_unconfined_plugin_t:process { noatsecure rlimitinh siginh }; #Not a NagioSQL issue
