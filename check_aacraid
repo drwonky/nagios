@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# arcconf must be setuid for this to work
-
 . /etc/adaptec/aac.conf
 
 #Set script name
@@ -10,12 +8,26 @@ SCRIPT=`basename ${BASH_SOURCE[0]}`
 #Defunct disk drive count                 : 1
 #Logical devices/Failed/Degraded          : 2/0/1
 
+DEGRADED=($($ARCCONF getconfig 1 ad|grep "Degraded"|cut -d: -f2|tr '/' ' '))
 DEFUNCT=$($ARCCONF getconfig 1 ad|grep "Defunct disk drive count"|awk '{print $6}')
-STATE=$($ARCCONF getconfig 1 pd|grep -A2 Failed|egrep -e "Reported Location|*  State *: "|grep -v Failed|cut -d: -f2|sed -e 's/^ *//g;s/,//g;s/ /_/g;')
+REBUILDING=$($ARCCONF getconfig 1 pd|grep -A4 Rebuilding|grep -e "Reported Location"|cut -d: -f2)
 
-if [ ! -z "$DEFUNCT" -a "$DEFUNCT" -ne 0 ]; then
-	status="Failed"
-	exitstatus=2
+if [ ! -z "${DEGRADED[2]}" ]; then
+	status="Degraded"
+	if [ ! -z "$REBUILDING" ]; then
+		PERCENT=$($ARCCONF getstatus 1|grep "Percentage complete"|cut -d: -f2)
+		location="Rebuilding at $REBUILDING Percent complete: $PERCENT"
+		exitstatus=1
+	else
+		STATE=$($ARCCONF getconfig 1 pd|grep -A2 Failed|egrep -e "Reported Location|*  State *: "|grep -v Failed|cut -d: -f2)
+		status="Failed drive not rebuilding"
+		exitstatus=2
+		location=$STATE
+	fi
+elif [ ! -z "$DEFUNCT" -a "$DEFUNCT" -ne 0 ]; then
+	STATE=$($ARCCONF getconfig 1 pd|grep -A2 Failed|egrep -e "Reported Location|*  State *: "|grep -v Failed|cut -d: -f2)
+	status="Failed drive not degraded"
+	exitstatus=1
 	location=$STATE
 else
 	status="OK"
