@@ -10,10 +10,10 @@ SCRIPT=`basename ${BASH_SOURCE[0]}`
 
 DEGRADED=($($ARCCONF getconfig 1 ad|grep "Degraded"|cut -d: -f2|tr '/' ' '))
 DEFUNCT=$($ARCCONF getconfig 1 ad|grep "Defunct disk drive count"|awk '{print $6}')
-REBUILDING=$($ARCCONF getconfig 1 pd|grep -A4 Rebuilding|grep -e "Reported Location"|cut -d: -f2)
 
-if [ ! -z "${DEGRADED[2]}" ]; then
+if [ "${DEGRADED[2]}" -ne 0 ]; then
 	status="Degraded"
+	REBUILDING=$($ARCCONF getconfig 1 pd|grep -A4 Rebuilding|grep -e "Reported Location"|cut -d: -f2)
 	if [ ! -z "$REBUILDING" ]; then
 		PERCENT=$($ARCCONF getstatus 1|grep "Percentage complete"|cut -d: -f2)
 		location="Rebuilding at $REBUILDING Percent complete: $PERCENT"
