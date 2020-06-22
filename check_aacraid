@@ -10,6 +10,7 @@ SCRIPT=`basename ${BASH_SOURCE[0]}`
 
 DEGRADED=($($ARCCONF getconfig 1 ad|grep "Degraded"|cut -d: -f2|tr '/' ' '))
 DEFUNCT=$($ARCCONF getconfig 1 ad|grep "Defunct disk drive count"|awk '{print $6}')
+SMART=$($ARCCONF getconfig 1 pd|grep "S.M.A.R.T. warnings"|awk '{print $4}'|grep -v 0|wc -l)
 
 if [ "${DEGRADED[2]}" -ne 0 ]; then
 	status="Degraded"
@@ -29,6 +30,9 @@ elif [ ! -z "$DEFUNCT" -a "$DEFUNCT" -ne 0 ]; then
 	status="Failed drive not degraded"
 	exitstatus=1
 	location=$STATE
+elif [ "$SMART" -ne 0 ]; then
+	status="$status SMART Warnings $SMART"
+	exitstatus=1
 else
 	status="OK"
 	exitstatus=0
