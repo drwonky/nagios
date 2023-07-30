@@ -11,6 +11,7 @@ SCRIPT=`basename ${BASH_SOURCE[0]}`
 DEGRADED=($($ARCCONF getconfig 1 ad|grep "Degraded"|cut -d: -f2|tr '/' ' '))
 DEFUNCT=$($ARCCONF getconfig 1 ad|grep "Defunct disk drive count"|awk '{print $6}')
 SMART=$($ARCCONF getconfig 1 pd|grep "S.M.A.R.T. warnings"|awk '{print $4}'|grep -v 0|wc -l)
+OFFLINE=$($ARCCONF getconfig 1 pd | sed -n '/Device #/{:start /State/!{N;b start};s/\n//g;s/ *\(Device #[[:digit:]]*\).*\(State \)*:\(.*\)$/\1\2:\3/p}' | grep -v -E "(Online|Global Hot-Spare)" | wc -l)
 
 if [ "${DEGRADED[2]}" -ne 0 ]; then
 	status="Degraded"
@@ -32,6 +33,11 @@ elif [ ! -z "$DEFUNCT" -a "$DEFUNCT" -ne 0 ]; then
 	location=$STATE
 elif [ "$SMART" -ne 0 ]; then
 	status="$status SMART Warnings $SMART"
+	exitstatus=1
+elif [ "$OFFLINE" -ne 0 ]; then
+	DEVICE_STATE=$($ARCCONF getconfig 1 pd | sed -n '/Device #/{:start /State/!{N;b start};s/\n//g;s/ *\(Device #[[:digit:]]*\).*\(State \)*:\(.*\)$/\1\2:\3/p}' | grep -v -E "(Online|Global Hot-Spare)")
+	status="Offline"
+	location=$DEVICE_STATE
 	exitstatus=1
 else
 	status="OK"
